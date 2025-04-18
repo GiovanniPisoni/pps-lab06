@@ -13,6 +13,7 @@ enum List[A]:
   def tail: Option[List[A]] = this match
     case h :: t => Some(t)
     case _ => None
+
   def foreach(consumer: A => Unit): Unit = this match
     case h :: t => consumer(h); t.foreach(consumer)
     case _ =>
@@ -45,13 +46,34 @@ enum List[A]:
     case h :: t => t.foldLeft(h)(op)
 
   // Exercise: implement the following methods
-  def zipWithValue[B](value: B): List[(A, B)] = ???
-  def length(): Int = ???
-  def zipWithIndex: List[(A, Int)] = ???
-  def partition(predicate: A => Boolean): (List[A], List[A]) = ???
-  def span(predicate: A => Boolean): (List[A], List[A]) = ???
-  def takeRight(n: Int): List[A] = ???
-  def collect(predicate: PartialFunction[A, A]): List[A] = ???
+  def zipWithValue[B](value: B): List[(A, B)] =
+    this.map((_, value))
+
+  def length(): Int =
+    this.foldLeft(0)((acc, _) => acc + 1)
+
+  def zipWithIndex: List[(A, Int)] =
+    this.foldRight((Nil[(A, Int)](), this.length() - 1))((v, acc) => ((v, acc._2) :: acc._1, acc._2 - 1))._1
+
+  def partition(predicate: A => Boolean): (List[A], List[A]) =
+    this.foldRight((Nil[A](), Nil[A]()))((v, acc) =>
+      if predicate(v) then (v :: acc._1, acc._2)
+      else (acc._1, v :: acc._2)
+    )
+
+  def span(predicate: A => Boolean): (List[A], List[A]) =
+    this.foldLeft((Nil[A](), Nil[A](), true))((acc, v) =>
+      if predicate(v) && acc._3 then (v :: acc._1, acc._2, true)
+      else (acc._1, v :: acc._2, false)
+    )
+    match
+      case (l1, l2, b) => (l1, l2)
+
+  def takeRight(n: Int): List[A] =
+    this.zipWithIndex.filter((_, index) => index >= this.length() - n).map(_._1)
+
+  def collect(predicate: PartialFunction[A, A]): List[A] =
+    this.flatMap(elem => if predicate.isDefinedAt(elem) then predicate(elem) :: Nil() else Nil())
 // Factories
 object List:
 
